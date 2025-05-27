@@ -3,7 +3,7 @@
 GraphShaggingBot is a Discord bot made for my friend group discord server that fetches and displays your holdings from the Trading212 API.
 
 ## Features
-- Slash command `/holdings` to fetch and display your Trading212 holdings.
+- Slash command `/holdings` to fetch and display your Trading212 holdings. (WIP)
 - Slash command `/checkapi` to verify Trading212 API connectivity.
 
 ## Prerequisites
