@@ -9,7 +9,7 @@ GraphShaggingBot is a Discord bot made for my friend group discord server that f
 ## Prerequisites
 - Node.js
 - A Discord bot token
-- A Trading212 API key (With correct permissions that I will put here when the bot is functional)
+- A Trading212 API key (With the 'Portfolio' permission enabled)
 - Your Discord application's client ID and guild ID
 
 ## Setup Instructions
