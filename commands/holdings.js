@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
 
+// Trading212 API endpoints
 const PORTFOLIO_URL = 'https://live.trading212.com/api/v0/equity/portfolio';
 const INSTRUMENTS_URL = 'https://live.trading212.com/api/v0/equity/metadata/instruments';
 
@@ -9,8 +10,10 @@ export const data = {
 };
 
 export async function execute(interaction, apiKey) {
+  // Defer reply since API calls might take time
   await interaction.deferReply();
   try {
+    // Fetch portfolio data from Trading212
     const portfolioResp = await fetch(PORTFOLIO_URL, {
       headers: { Authorization: apiKey },
     });
@@ -21,6 +24,8 @@ export async function execute(interaction, apiKey) {
     }
 
     const portfolio = await portfolioResp.json();
+    
+    // Fetch instrument metadata
     const instrumentsResp = await fetch(INSTRUMENTS_URL, {
       headers: { Authorization: apiKey },
     });
@@ -32,6 +37,7 @@ export async function execute(interaction, apiKey) {
 
     const instruments = await instrumentsResp.json();
     
+    // Create lookup map for more efficient instrument data access
     const instrumentMap = {};
     instruments.forEach(instrument => {
       if (instrument.ticker) {
@@ -39,12 +45,14 @@ export async function execute(interaction, apiKey) {
       }
     });
 
+    // Filter to only show stocks with positive quantity
     const owned = portfolio.filter(item => item.quantity && item.quantity > 0);
     if (owned.length === 0) {
       await interaction.editReply('You do not own any stocks.');
       return;
     }
 
+    // Format each holding with name, shares, price and P/L
     const holdings = owned.map(item => {
       const instrument = instrumentMap[item.ticker] || {};
       const name = instrument.shortName || instrument.displayName || item.ticker;
@@ -60,6 +68,7 @@ export async function execute(interaction, apiKey) {
              `> P/L: \`${profitLossStr} ${currency}\` ${profitLossEmoji}\n`;
     }).join('\n');
 
+    // Calculate total profit/loss across all holdings
     const totalPL = owned.reduce((total, item) => {
       return total + ((item.currentPrice - item.averagePrice) * item.quantity);
     }, 0);
@@ -68,6 +77,7 @@ export async function execute(interaction, apiKey) {
                          `**Total P/L:** \`${totalPL >= 0 ? '+' : ''}${totalPL.toFixed(2)} GBP\` ` +
                          `${totalPL >= 0 ? '📈' : '📉'}`;
 
+    // Handle Discord's 2000 character message limit
     if (summaryMessage.length <= 2000) {
       await interaction.editReply(summaryMessage);
     } else {

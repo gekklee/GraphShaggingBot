@@ -8,8 +8,10 @@ export const data = {
 };
 
 export async function execute(interaction, apiKey) {
+  // Defer reply since API call might take time
   await interaction.deferReply();
   try {
+    // Test API connectivity
     const response = await fetch(INSTRUMENTS_URL, {
       headers: { Authorization: apiKey },
     });
@@ -20,6 +22,7 @@ export async function execute(interaction, apiKey) {
       const status = response.status;
       let errorMessage = '❌ Trading212 API is not accessible. ';
       
+      // Map common HTTP error codes to user friendly messages
       switch (status) {
         case 401:
           errorMessage += 'Invalid API key or unauthorised access.';
