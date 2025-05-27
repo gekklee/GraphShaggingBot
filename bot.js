@@ -1,6 +1,7 @@
-import { Client, GatewayIntentBits, REST, Routes } from 'discord.js';
+import { Client, Collection, GatewayIntentBits, REST, Routes } from 'discord.js';
 import dotenv from 'dotenv';
 import * as holdingsCommand from './commands/holdings.js';
+import * as checkapiCommand from './commands/checkapi.js';
 
 dotenv.config();
 
@@ -11,35 +12,52 @@ const TRADING212_API_KEY = process.env.TRADING212_API_KEY;
 
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-const commands = [holdingsCommand.data];
+client.commands = new Collection();
+
+const commandModules = [holdingsCommand, checkapiCommand];
+commandModules.forEach(command => {
+    client.commands.set(command.data.name, command);
+});
 
 const rest = new REST({ version: '10' }).setToken(DISCORD_TOKEN);
 
 async function registerCommands() {
-  try {
-    await rest.put(
-      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-      { body: commands }
-    );
-    console.log('Slash commands registered.');
-  } catch (error) {
-    console.error('Error registering commands:', error);
-  }
+    try {
+        const commandData = commandModules.map(command => command.data);
+        await rest.put(
+            Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+            { body: commandData }
+        );
+        console.log('Slash commands registered.');
+    } catch (error) {
+        console.error('Error registering commands:', error);
+    }
 }
 
 client.once('ready', () => {
-  console.log(`Logged in as ${client.user.tag}`);
+    console.log(`Logged in as ${client.user.tag}`);
 });
 
 client.on('interactionCreate', async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
+    if (!interaction.isChatInputCommand()) return;
 
-  if (interaction.commandName === 'holdings') {
-    await holdingsCommand.execute(interaction, TRADING212_API_KEY);
-  }
+    const command = client.commands.get(interaction.commandName);
+    if (!command) return;
+
+    try {
+        await command.execute(interaction, TRADING212_API_KEY);
+    } catch (error) {
+        console.error(`Error executing ${interaction.commandName}:`, error);
+        const errorMessage = 'There was an error executing this command.';
+        if (interaction.replied || interaction.deferred) {
+            await interaction.followUp({ content: errorMessage, ephemeral: true });
+        } else {
+            await interaction.reply({ content: errorMessage, ephemeral: true });
+        }
+    }
 });
 
 (async () => {
-  await registerCommands();
-  client.login(DISCORD_TOKEN);
+    await registerCommands();
+    client.login(DISCORD_TOKEN);
 })();
