@@ -4,6 +4,7 @@ GraphShaggingBot is a Discord bot made for my friend group discord server that f
 
 ## Features
 - Slash command `/holdings` to fetch and display your Trading212 holdings.
+- Slash command `/checkapi` to verify Trading212 API connectivity.
 
 ## Prerequisites
 - Node.js
@@ -48,6 +49,7 @@ node bot.js
 
 ## Usage
 - Use the `/holdings` command in your Discord server to fetch and display your Trading212 holdings.
+- Use the `/checkapi` command to verify if the Trading212 API is reachable and working.
 
 ## License
 This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE) file for details.
