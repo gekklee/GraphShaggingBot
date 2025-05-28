@@ -2,6 +2,8 @@ import { Client, Collection, GatewayIntentBits, REST, Routes } from 'discord.js'
 import dotenv from 'dotenv';
 import * as holdingsCommand from './commands/holdings.js';
 import * as checkapiCommand from './commands/checkapi.js';
+import * as setapikeyCommand from './commands/setapikey.js';
+import * as removeapikeyCommand from './commands/removeapikey.js';
 
 dotenv.config();
 
@@ -9,7 +11,6 @@ dotenv.config();
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID;
 const GUILD_ID = process.env.DISCORD_GUILD_ID;
-const TRADING212_API_KEY = process.env.TRADING212_API_KEY;
 
 // Initialise Discord client with minimal required permissions
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
@@ -18,7 +19,7 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 client.commands = new Collection();
 
 // Register all available commands
-const commandModules = [holdingsCommand, checkapiCommand];
+const commandModules = [holdingsCommand, checkapiCommand, setapikeyCommand, removeapikeyCommand];
 commandModules.forEach(command => {
     client.commands.set(command.data.name, command);
 });
@@ -53,16 +54,39 @@ client.on('interactionCreate', async (interaction) => {
     if (!command) return;
 
     try {
-        // Pass Trading212 API key to all commands
-        await command.execute(interaction, TRADING212_API_KEY);
+        if (interaction.commandName === 'setapikey' || interaction.commandName === 'removeapikey') {
+            // Handle commands that don't need an existing API key
+            await command.execute(interaction);
+        } else {
+            // For other commands, get the user's API key
+            const apiKey = setapikeyCommand.getApiKey(interaction.user.id);
+            if (!apiKey) {
+                await interaction.reply({ 
+                    content: 'Please set your Trading212 API key first using the `/setapikey` command.',
+                    flags: [1 << 6] // Using flags for ephemeral message
+                });
+                return;
+            }
+            // Pass user's API key to the command
+            await command.execute(interaction, apiKey);
+        }
     } catch (error) {
         console.error(`Error executing ${interaction.commandName}:`, error);
-        const errorMessage = 'There was an error executing this command.';
-        // Handle errors for both deferred and immediate replies
-        if (interaction.replied || interaction.deferred) {
-            await interaction.followUp({ content: errorMessage, ephemeral: true });
-        } else {
-            await interaction.reply({ content: errorMessage, ephemeral: true });
+        
+        try {
+            // Only try to respond if we haven't already
+            if (!interaction.replied && !interaction.deferred) {
+                await interaction.reply({ 
+                    content: 'There was an error executing this command.',
+                    flags: [1 << 6] // Using flags for ephemeral message
+                });
+            } else if (interaction.deferred) {
+                // If the interaction was deferred, edit the reply
+                await interaction.editReply('There was an error executing this command.');
+            }
+        } catch (err) {
+            // If we can't respond to the interaction, log it
+            console.error('Error handling command error:', err);
         }
     }
 });
