@@ -8,8 +8,8 @@ export const data = {
 };
 
 export async function execute(interaction, apiKey) {
-  // Defer reply since API call might take time
-  await interaction.deferReply();
+  await interaction.deferReply({ flags: [1 << 6] }); // Using flags for ephemeral message
+  
   try {
     // Test API connectivity
     const response = await fetch(INSTRUMENTS_URL, {
@@ -17,7 +17,10 @@ export async function execute(interaction, apiKey) {
     });
     
     if (response.ok) {
-      await interaction.editReply('✅ Trading212 API is accessible and working properly.');
+      await interaction.editReply({
+        content: '✅ Trading212 API is accessible and working properly.',
+        flags: [1 << 6]
+      });
     } else {
       const status = response.status;
       let errorMessage = '❌ Trading212 API is not accessible. ';
@@ -37,10 +40,16 @@ export async function execute(interaction, apiKey) {
           errorMessage += `Server returned status code ${status}.`;
       }
       
-      await interaction.editReply(errorMessage);
+      await interaction.editReply({
+        content: errorMessage,
+        flags: [1 << 6]
+      });
     }
   } catch (err) {
     console.error('Error checking API:', err);
-    await interaction.editReply('❌ Failed to connect to Trading212 API. Please check your internet connection or try again later.');
+    await interaction.editReply({
+      content: '❌ Failed to connect to Trading212 API. Please check your internet connection or try again later.',
+      flags: [1 << 6]
+    });
   }
 }
