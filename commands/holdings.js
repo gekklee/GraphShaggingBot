@@ -52,12 +52,13 @@ export async function execute(interaction, apiKey) {
       return;
     }
 
-    // Format each holding with name, shares, price and P/L
+    // Format each holding with name, shares, price, total value and P/L
     const holdings = owned.map(item => {
       const instrument = instrumentMap[item.ticker] || {};
       const name = instrument.shortName || instrument.displayName || item.ticker;
       const currency = instrument.currencyCode || '';
       
+      const totalValue = item.currentPrice * item.quantity;
       const profitLoss = (item.currentPrice - item.averagePrice) * item.quantity;
       const profitLossStr = profitLoss >= 0 ? `+${profitLoss.toFixed(2)}` : profitLoss.toFixed(2);
       const profitLossEmoji = profitLoss >= 0 ? '📈' : '📉';
@@ -65,7 +66,8 @@ export async function execute(interaction, apiKey) {
       return `**${name}**\n` +
              `> Shares: \`${item.quantity.toFixed(2)}\`\n` +
              `> Price: \`${item.currentPrice} ${currency}\`\n` +
-             `> P/L: \`${profitLossStr} ${currency}\` ${profitLossEmoji}\n`;
+             `> Total Value: \`${totalValue.toFixed(2)} ${currency}\`\n` +
+             `> Total P/L: \`${profitLossStr} ${currency}\` ${profitLossEmoji}\n`;
     }).join('\n');
 
     // Calculate total profit/loss across all holdings
